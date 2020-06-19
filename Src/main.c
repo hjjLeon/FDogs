@@ -109,12 +109,19 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_Delay(500);
-    sprintf((char*)cdcSendBuffer, "hello world!!\r\n");
+    //HAL_Delay(100);
+    // extern uint8_t UserRxBufferFS[];
+    // if(UserRxBufferFS[0] == 'A' &&
+    // UserRxBufferFS[1] == 'N' &&
+    // UserRxBufferFS[2] == 'G')
+    // {
+    //     angle = (UserRxBufferFS[3]-'0')*10+(UserRxBufferFS[4]-'0');
+    // }
+    extern float myAngle;
+    // sprintf((char*)cdcSendBuffer, "hello world!!\r\n");
     //CDC_Transmit_FS(cdcSendBuffer, strlen(cdcSendBuffer));
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2);
-    htim2.Instance->CCR1 = DEG2CCR(angle);
-    if(direction == 0)
+    /*if(direction == 0)
     {
       if(angle >= 180.0)
       {
@@ -137,7 +144,7 @@ int main(void)
       {
         angle -= 90.0;
       }
-    }
+    }*/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

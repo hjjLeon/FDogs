@@ -24,6 +24,7 @@
 
 /* USER CODE BEGIN INCLUDE */
 
+#include "tim.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -79,7 +80,7 @@
   */
 
 /* USER CODE BEGIN PRIVATE_MACRO */
-
+float myAngle = 90.0;
 /* USER CODE END PRIVATE_MACRO */
 
 /**
@@ -263,7 +264,16 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  CDC_Transmit_FS(Buf, *Len);
+  
+    if(*Len > 3 && *Len <= 9 &&
+    Buf[0] == 'A' &&
+    Buf[1] == 'N' &&
+    Buf[2] == 'G')
+    {
+      Buf[*Len] = 0;
+      myAngle = atof(Buf+3);
+      htim2.Instance->CCR1 = DEG2CCR(myAngle);
+    }
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
