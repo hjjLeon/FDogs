@@ -20,9 +20,10 @@ typedef struct
     uint8_t param[62];
 }commandPacket_t;
 
-
-void dealWithProtocol(void);
-
+void protocolRawDataSend(void);
+void ProtocolWritePacket(void);
+void ProtocolReadPacket(void);
+void commandExc(void);
 
 #endif
 

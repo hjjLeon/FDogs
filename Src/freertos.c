@@ -22,11 +22,12 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
-#include "cmsis_os2.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */     
 #include "command.h"
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,9 +51,11 @@
 /* USER CODE END Variables */
 typedef StaticQueue_t osStaticMessageQDef_t;
 osThreadId_t commandTaskHandle;
-osMessageQueueId_t portRawDataQueueRxHandle;
-uint8_t portRawDataQueueRxBuffer[ 2048 * sizeof( uint8_t ) ];
-osStaticMessageQDef_t portRawDataQueueRxControlBlock;
+osThreadId_t AlgsTaskHandle;
+osThreadId_t RawSendTaskHandle;
+osMessageQueueId_t portRawDataRxHandle;
+uint8_t portRawDataRxBuffer[ 2048 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t portRawDataRxControlBlock;
 osMessageQueueId_t cmdPacketRxHandle;
 uint8_t cmdPacketRxBuffer[ 16 * 64 ];
 osStaticMessageQDef_t cmdPacketRxControlBlock;
@@ -62,6 +65,9 @@ osStaticMessageQDef_t cmdPacketTxControlBlock;
 osMessageQueueId_t portRawDataTxHandle;
 uint8_t portRawDataTxBuffer[ 2048 * sizeof( uint8_t ) ];
 osStaticMessageQDef_t portRawDataTxControlBlock;
+osMessageQueueId_t cmdPacketRxInstantHandle;
+uint8_t cmdPacketRxInstantBuffer[ 16 * 64 ];
+osStaticMessageQDef_t cmdPacketRxInstantControlBlock;
 osMutexId_t portRawDataMutexHandle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,6 +76,8 @@ osMutexId_t portRawDataMutexHandle;
 /* USER CODE END FunctionPrototypes */
 
 void StartCommandTask(void *argument);
+void StartAlgsTask(void *argument);
+void StartRawSendTask(void *argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -126,12 +134,12 @@ osKernelInitialize();
   /* definition and creation of portRawDataQueueRx */
   const osMessageQueueAttr_t portRawDataQueueRx_attributes = {
     .name = "portRawDataQueueRx",
-    .cb_mem = &portRawDataQueueRxControlBlock,
-    .cb_size = sizeof(portRawDataQueueRxControlBlock),
-    .mq_mem = &portRawDataQueueRxBuffer,
-    .mq_size = sizeof(portRawDataQueueRxBuffer)
+    .cb_mem = &portRawDataRxControlBlock,
+    .cb_size = sizeof(portRawDataRxControlBlock),
+    .mq_mem = &portRawDataRxBuffer,
+    .mq_size = sizeof(portRawDataRxBuffer)
   };
-  portRawDataQueueRxHandle = osMessageQueueNew (2048, sizeof(uint8_t), &portRawDataQueueRx_attributes);
+  portRawDataRxHandle = osMessageQueueNew (2048, sizeof(uint8_t), &portRawDataQueueRx_attributes);
 
   /* definition and creation of cmdPacketRx */
   const osMessageQueueAttr_t cmdPacketRx_attributes = {
@@ -163,6 +171,16 @@ osKernelInitialize();
   };
   portRawDataTxHandle = osMessageQueueNew (2048, sizeof(uint8_t), &portRawDataTx_attributes);
 
+  /* definition and creation of cmdPacketRxInstant */
+  const osMessageQueueAttr_t cmdPacketRxInstant_attributes = {
+    .name = "cmdPacketRxInstant",
+    .cb_mem = &cmdPacketRxInstantControlBlock,
+    .cb_size = sizeof(cmdPacketRxInstantControlBlock),
+    .mq_mem = &cmdPacketRxInstantBuffer,
+    .mq_size = sizeof(cmdPacketRxInstantBuffer)
+  };
+  cmdPacketRxInstantHandle = osMessageQueueNew (16, 64, &cmdPacketRxInstant_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -176,12 +194,27 @@ osKernelInitialize();
   };
   commandTaskHandle = osThreadNew(StartCommandTask, NULL, &commandTask_attributes);
 
+  /* definition and creation of AlgsTask */
+  const osThreadAttr_t AlgsTask_attributes = {
+    .name = "AlgsTask",
+    .priority = (osPriority_t) osPriorityRealtime,
+    .stack_size = 512
+  };
+  AlgsTaskHandle = osThreadNew(StartAlgsTask, NULL, &AlgsTask_attributes);
+
+  /* definition and creation of RawSendTask */
+  const osThreadAttr_t RawSendTask_attributes = {
+    .name = "RawSendTask",
+    .priority = (osPriority_t) osPriorityHigh,
+    .stack_size = 512
+  };
+  RawSendTaskHandle = osThreadNew(StartRawSendTask, NULL, &RawSendTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
 }
-
 
 /* USER CODE BEGIN Header_StartCommandTask */
 /**
@@ -198,13 +231,66 @@ void StartCommandTask(void *argument)
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartCommandTask */
+
+  osDelay(1000);
+
+  // uint8_t buff[100];
+  // memset(buff, 0x66, 100);
+  // for(uint8_t i = 0; i < 16; i++)
+  // {
+  //   //sprintf(buff, "value is %d\r\n", i);
+  //   // osDelay(50);
+  //   while(CDC_Transmit_FS(buff, 64) != 0)
+  //     osDelay(5);
+  // }
+
+
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(20);
+    ProtocolReadPacket();
+    commandExc();
+    ProtocolWritePacket();
+  }
+  /* USER CODE END StartCommandTask */
+}
+
+/* USER CODE BEGIN Header_StartAlgsTask */
+/**
+* @brief Function implementing the AlgsTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartAlgsTask */
+void StartAlgsTask(void *argument)
+{
+  /* USER CODE BEGIN StartAlgsTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartAlgsTask */
+}
+
+/* USER CODE BEGIN Header_StartRawSendTask */
+/**
+* @brief Function implementing the RawSendTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartRawSendTask */
+void StartRawSendTask(void *argument)
+{
+  /* USER CODE BEGIN StartRawSendTask */
   /* Infinite loop */
   for(;;)
   {
     osDelay(10);
-    dealWithProtocol();
+    protocolRawDataSend();
   }
-  /* USER CODE END StartCommandTask */
+  /* USER CODE END StartRawSendTask */
 }
 
 /* Private application code --------------------------------------------------*/

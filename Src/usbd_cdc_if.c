@@ -286,12 +286,12 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
       htim2.Instance->CCR1 = DEG2CCR(myAngle);
     }
   #else
-    extern osMessageQueueId_t portRawDataQueueRxHandle;
-    if(*Len <= osMessageQueueGetSpace(portRawDataQueueRxHandle))
+    extern osMessageQueueId_t portRawDataRxHandle;
+    if(*Len <= osMessageQueueGetSpace(portRawDataRxHandle))
     {
       for(uint8_t i = 0; i < *Len; i++)
       {
-        osMessageQueuePut(portRawDataQueueRxHandle, Buf+i, 0, 0);
+        osMessageQueuePut(portRawDataRxHandle, Buf+i, 0, 0);
       }
     }
   #endif
