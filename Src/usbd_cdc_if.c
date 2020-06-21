@@ -23,8 +23,9 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
 #include "tim.h"
+#include "FreeRTOS.h"
+#include "cmsis_os2.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,7 +34,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+extern osMutexId_t portRawDataMutexHandle;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -264,7 +265,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  
+  #if 0
     if(*Len > 3 && *Len <= 9 &&
     Buf[0] == 'A' &&
     Buf[1] == 'N' &&
@@ -274,6 +275,27 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
       myAngle = atof(Buf+3);
       htim2.Instance->CCR1 = DEG2CCR(myAngle);
     }
+    else if(*Len > 4 && *Len <= 10 &&
+    Buf[0] == 'F' &&
+    Buf[1] == 'O' &&
+    Buf[2] == 'O' &&
+    Buf[3] == 'T')
+    {
+      Buf[*Len] = 0;
+      myAngle = (atof(Buf+4)/16.0*20.0+90.0);
+      htim2.Instance->CCR1 = DEG2CCR(myAngle);
+    }
+  #else
+    extern osMessageQueueId_t portRawDataQueueRxHandle;
+    if(*Len <= osMessageQueueGetSpace(portRawDataQueueRxHandle))
+    {
+      for(uint8_t i = 0; i < *Len; i++)
+      {
+        osMessageQueuePut(portRawDataQueueRxHandle, Buf+i, 0, 0);
+      }
+    }
+  #endif
+
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
