@@ -105,7 +105,6 @@ int main(void)
   MX_TIM2_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
@@ -131,7 +130,6 @@ int main(void)
     extern float myAngle;
     // sprintf((char*)cdcSendBuffer, "hello world!!\r\n");
     //CDC_Transmit_FS(cdcSendBuffer, strlen(cdcSendBuffer));
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2);
     /*if(direction == 0)
     {
       if(angle >= 180.0)
@@ -259,7 +257,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+  else if(htim->Instance == TIM2)
+  {
+    jointServoOutput();
+  }
   /* USER CODE END Callback 1 */
 }
 

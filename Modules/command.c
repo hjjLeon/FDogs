@@ -1,6 +1,8 @@
 #include "cmsis_os2.h"
 #include "command.h"
 #include "usbd_cdc_if.h"
+#include "algs.h"
+
 
 typedef struct
 {
@@ -23,6 +25,7 @@ void testCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
     {
         if(*paramLenth == 1)
             testValue = ((uint8_t*)param)[0];
+        *paramLenth = 0;
     }
     else
     {
@@ -31,8 +34,39 @@ void testCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
     }
 }
 
+void GoCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    float temp;
+    uint8_t index;
+    if(rw)
+    {
+        if(*paramLenth == 5)
+        {
+            index = ((uint8_t*)param)[0];
+            memcpy(&temp, ((uint8_t*)param)+1, 4);
+            if(temp > 90)
+            {
+                temp = 90;
+            }
+            else if(temp < -90)
+            {
+                temp = -90;
+            }
+
+            jointParam[0][0].angleCurrent = temp;
+        }
+        
+        *paramLenth = 0;
+    }
+    else
+    {
+        *paramLenth = 0;
+    }
+}
+
 CommList_t commList[] = {
-    {1, testCommandFunction},
+    {0, testCommandFunction},
+    {20, GoCommandFunction},
     {255, NULL},
 };
 

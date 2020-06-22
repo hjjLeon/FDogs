@@ -20,7 +20,8 @@
                 "USE_HAL_DRIVER",
                 "STM32H750xx",
                 "USE_HAL_DRIVER",
-                "STM32H750xx"
+                "STM32H750xx",
+                "__STATIC_INLINE=inline"
             ],
             "windowsSdkVersion": "10.0.17763.0",
             "compilerPath": "D:/Microsoft Visual Studio/MVS2017/VC/Tools/MSVC/14.16.27023/bin/Hostx64/x64/cl.exe",

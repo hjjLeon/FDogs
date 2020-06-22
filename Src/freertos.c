@@ -26,6 +26,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */     
+#include "cmsis_os2.h"
 #include "command.h"
 #include "usbd_cdc_if.h"
 /* USER CODE END Includes */
@@ -131,15 +132,15 @@ osKernelInitialize();
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* definition and creation of portRawDataQueueRx */
-  const osMessageQueueAttr_t portRawDataQueueRx_attributes = {
-    .name = "portRawDataQueueRx",
+  /* definition and creation of portRawDataRx */
+  const osMessageQueueAttr_t portRawDataRx_attributes = {
+    .name = "portRawDataRx",
     .cb_mem = &portRawDataRxControlBlock,
     .cb_size = sizeof(portRawDataRxControlBlock),
     .mq_mem = &portRawDataRxBuffer,
     .mq_size = sizeof(portRawDataRxBuffer)
   };
-  portRawDataRxHandle = osMessageQueueNew (2048, sizeof(uint8_t), &portRawDataQueueRx_attributes);
+  portRawDataRxHandle = osMessageQueueNew (2048, sizeof(uint8_t), &portRawDataRx_attributes);
 
   /* definition and creation of cmdPacketRx */
   const osMessageQueueAttr_t cmdPacketRx_attributes = {
@@ -266,10 +267,14 @@ void StartCommandTask(void *argument)
 void StartAlgsTask(void *argument)
 {
   /* USER CODE BEGIN StartAlgsTask */
+  jointParamInit();
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    // osDelay(250);
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2);
+    osDelay(10);
+    algsProfile();
   }
   /* USER CODE END StartAlgsTask */
 }

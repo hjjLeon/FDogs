@@ -52,6 +52,7 @@
 "h7test\heap_4.o"
 "h7test\port.o"
 "h7test\command.o"
+"h7test\algs.o"
 --library_type=microlib --strict --scatter "H7Test\H7Test.sct"
 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
