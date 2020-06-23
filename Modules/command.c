@@ -107,6 +107,46 @@ void setZeroCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
     }
 }
 
+void setMaxCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    float temp;
+    uint8_t index;
+    if(rw)
+    {
+        if(*paramLenth == 1 && gAlgsMode == AlgsModeIdle)
+        {
+            index = ((uint8_t*)param)[0];
+            jointParam[0][0].angleMax = jointParam[0][0].angleCurrent;
+        }
+        
+        *paramLenth = 0;
+    }
+    else
+    {
+        *paramLenth = 0;
+    }
+}
+
+void setMinCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    float temp;
+    uint8_t index;
+    if(rw)
+    {
+        if(*paramLenth == 1 && gAlgsMode == AlgsModeIdle)
+        {
+            index = ((uint8_t*)param)[0];
+            jointParam[0][0].angleMin = jointParam[0][0].angleCurrent;
+        }
+        
+        *paramLenth = 0;
+    }
+    else
+    {
+        *paramLenth = 0;
+    }
+}
+
 void jogCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 {
     uint8_t index, jogcmd;
@@ -166,6 +206,8 @@ CommList_t commList[] = {
     {10, speedParamCmdFunc},
     {11, posParamCmdFunc},
     {12, setZeroCmdFunc},
+    {13, setMaxCmdFunc},
+    {14, setMinCmdFunc},
 
     {30, jogCmdFunc},
 
@@ -351,6 +393,8 @@ void commandExc(void)
                     &packet.lenth);
                 if(packet.lenth)
                     osMessageQueuePut(cmdPacketTxHandle, &packet, 0, 0);
+
+                break;
             }
             else if(commList[i].id == 255)
             {
@@ -373,6 +417,8 @@ void commandExc(void)
                         &packet.lenth);
                     if(packet.lenth)
                         osMessageQueuePut(cmdPacketTxHandle, &packet, 0, 0);
+
+                    break;
                 }
                 else if(commList[i].id == 255)
                 {

@@ -18,6 +18,9 @@ void jointParamInit(void)
 {
     jointParam[0][0].zeroPosition = 90.0;
     jointParam[0][0].angleCurrent = 0;
+    jointParam[0][0].speedPesent = 100.0;
+    jointParam[0][0].angleMax = 55.0;
+    jointParam[0][0].angleMin = -30.0;
     jointAngleUpdate();
 
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
@@ -69,10 +72,23 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd)
 void AlgsJog(void)
 {
     jointParam[0][0].angleCurrent += jointParam[0][0].speed;
+
+    if((jointParam[0][0].angleCurrent > jointParam[0][0].angleMax && jointParam[0][0].speed > 0) ||
+    (jointParam[0][0].angleCurrent < jointParam[0][0].angleMin && jointParam[0][0].speed < 0))
+    {
+        jointParam[0][0].angleCurrent -= jointParam[0][0].speed;
+        gAlgsMode = AlgsModeIdle;
+    }
 }
 
 void AlgsPtpPredeal(void)
 {
+    if(jointParam[0][0].angleTarget > jointParam[0][0].angleMax || 
+    jointParam[0][0].angleTarget < jointParam[0][0].angleMin)
+    {
+        return;
+    }
+
     jointParam[0][0].speed = 10.0*(60.0/130.0)*(16.0/20.0)*(jointParam[0][0].speedPesent/100.0);//deg/10ms
 
     if(jointParam[0][0].angleTarget < jointParam[0][0].angleCurrent)

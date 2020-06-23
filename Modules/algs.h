@@ -19,6 +19,8 @@ typedef struct
     float speed;//in angle
     float speedPesent;
     float zeroPosition;//in raw
+    float angleMaxRaw;//in Raw
+    float angleMinRaw;//in Raw
 }jointParam_t;
 
 typedef enum
