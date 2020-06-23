@@ -267,13 +267,18 @@ void StartCommandTask(void *argument)
 void StartAlgsTask(void *argument)
 {
   /* USER CODE BEGIN StartAlgsTask */
+  uint8_t ledCount = 0;
   jointParamInit();
   /* Infinite loop */
   for(;;)
   {
-    // osDelay(250);
-    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2);
     osDelay(10);
+    ledCount++;
+    if(ledCount >= 50)
+    {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2);
+      ledCount = 0;
+    }
     algsProfile();
   }
   /* USER CODE END StartAlgsTask */

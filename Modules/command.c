@@ -19,7 +19,7 @@ extern osMessageQueueId_t cmdPacketRxHandle;
 extern osMessageQueueId_t cmdPacketRxInstantHandle;
 
 static uint8_t testValue = 0;
-void testCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
+void testCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 {
     if(rw)
     {
@@ -34,7 +34,102 @@ void testCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
     }
 }
 
-void GoCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
+void speedParamCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    float temp;
+    uint8_t index;
+    if(rw)
+    {
+        if(*paramLenth == 5)
+        {
+            index = ((uint8_t*)param)[0];
+            memcpy(&temp, ((uint8_t*)param)+1, 4);
+            if(temp > 100)
+            {
+                temp = 100;
+            }
+            else if(temp < 0)
+            {
+                temp = 0;
+            }
+
+            jointParam[0][0].speedPesent = temp;
+        }
+        
+        *paramLenth = 0;
+    }
+    else
+    {
+        *paramLenth = 0;
+    }
+}
+
+void posParamCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    float temp;
+    uint8_t index;
+    if(rw)
+    {
+        *paramLenth = 0;
+    }
+    else
+    {
+        if(*paramLenth == 1)
+        {
+            index = ((uint8_t*)param)[0];
+
+            temp = jointParam[0][0].angleCurrent;
+            memcpy(((uint8_t*)param)+1, &temp, 4);
+        }
+
+        *paramLenth = 5;
+    }
+}
+
+void setZeroCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    float temp;
+    uint8_t index;
+    if(rw)
+    {
+        if(*paramLenth == 1 && gAlgsMode == AlgsModeIdle)
+        {
+            index = ((uint8_t*)param)[0];
+            jointParam[0][0].zeroPosition = jointParam[0][0].angleRaw;
+            jointParam[0][0].angleCurrent = 0.0;
+        }
+        
+        *paramLenth = 0;
+    }
+    else
+    {
+        *paramLenth = 0;
+    }
+}
+
+void jogCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    uint8_t index, jogcmd;
+    if(rw)
+    {
+        if(*paramLenth == 2)
+        {
+            index = ((uint8_t*)param)[0];
+            jogcmd = ((uint8_t*)param)[1];
+
+            if(jogcmd < AlgsJogCmdMax)
+                AlgsJogPredeal(jogcmd);
+        }
+        
+        *paramLenth = 0;
+    }
+    else
+    {
+        *paramLenth = 0;
+    }
+}
+
+void goCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 {
     float temp;
     uint8_t index;
@@ -53,7 +148,8 @@ void GoCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
                 temp = -90;
             }
 
-            jointParam[0][0].angleCurrent = temp;
+            jointParam[0][0].angleTarget = temp;
+            AlgsPtpPredeal();
         }
         
         *paramLenth = 0;
@@ -65,8 +161,16 @@ void GoCommandFunction(uint8_t rw, void* param, uint8_t* paramLenth)
 }
 
 CommList_t commList[] = {
-    {0, testCommandFunction},
-    {20, GoCommandFunction},
+    {0, testCmdFunc},
+
+    {10, speedParamCmdFunc},
+    {11, posParamCmdFunc},
+    {12, setZeroCmdFunc},
+
+    {30, jogCmdFunc},
+
+    {40, goCmdFunc},
+
     {255, NULL},
 };
 
@@ -251,6 +355,29 @@ void commandExc(void)
             else if(commList[i].id == 255)
             {
                 break;
+            }
+        }
+    }
+    if(gAlgsMode == AlgsModeIdle)
+    {
+        if(osMessageQueueGetCount(cmdPacketRxHandle) != 0)
+        {
+            sta = osMessageQueueGet(cmdPacketRxHandle, &packet, NULL, 0);
+            for(uint8_t i = 0; i < 255; i++)
+            {
+                if(commList[i].id == packet.id)
+                {
+                    commList[i].command(
+                        packet.ctrl.bit.rw,
+                        (void*)packet.param,
+                        &packet.lenth);
+                    if(packet.lenth)
+                        osMessageQueuePut(cmdPacketTxHandle, &packet, 0, 0);
+                }
+                else if(commList[i].id == 255)
+                {
+                    break;
+                }
             }
         }
     }

@@ -9,9 +9,6 @@ static uint32_t angle2arr(float angle)
   return (uint32_t)(temp/1.1125);
 }
 
-
-extern TIM_HandleTypeDef htim2;
-
 AlgsMode_t gAlgsMode = AlgsModeIdle;
 jointParam_t jointParam[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM] = {0};
 
@@ -46,10 +43,81 @@ void jointServoOutput(void)
     htim2.Instance->CCR1 = jointParam[0][0].periodTickCount;
 }
 
+
+void AlgsJogPredeal(AlgsJogCmd_t cmd)
+{
+    switch(cmd)
+    {
+        case AlgsJogPos:
+            jointParam[0][0].speed = 10.0*(60.0/130.0)*(16.0/20.0)*(jointParam[0][0].speedPesent/100.0);//deg/10ms
+        break;
+        case AlgsJogNeg:
+            jointParam[0][0].speed = -10.0*(60.0/130.0)*(16.0/20.0)*(jointParam[0][0].speedPesent/100.0);//deg/10ms
+        break;
+    }
+
+    if(cmd == AlgsJogStop)
+    {
+        gAlgsMode = AlgsModeIdle;
+    }
+    else if(cmd < AlgsJogCmdMax)
+    {
+        gAlgsMode = AlgsModeJog;
+    }
+}
+
+void AlgsJog(void)
+{
+    jointParam[0][0].angleCurrent += jointParam[0][0].speed;
+}
+
+void AlgsPtpPredeal(void)
+{
+    jointParam[0][0].speed = 10.0*(60.0/130.0)*(16.0/20.0)*(jointParam[0][0].speedPesent/100.0);//deg/10ms
+
+    if(jointParam[0][0].angleTarget < jointParam[0][0].angleCurrent)
+    {
+        jointParam[0][0].speed *= -1.0;
+    }
+
+    gAlgsMode = AlgsModePtp;
+}
+
+uint8_t AlgsPtp(void)
+{
+    if(jointParam[0][0].angleCurrent == jointParam[0][0].angleTarget)
+    {
+        return 1;
+    }
+
+    jointParam[0][0].angleCurrent += jointParam[0][0].speed;
+
+    if((jointParam[0][0].speed < 0 && jointParam[0][0].angleCurrent < jointParam[0][0].angleTarget) || 
+    (jointParam[0][0].speed > 0 && jointParam[0][0].angleCurrent > jointParam[0][0].angleTarget) )
+    {
+        jointParam[0][0].angleCurrent = jointParam[0][0].angleTarget;
+    }
+
+    return 0;
+}
+
 void algsProfile()
 {
 
-    
+    switch(gAlgsMode)
+    {
+        case AlgsModeIdle:
+        break;
+        case AlgsModeJog:
+            AlgsJog();
+        break;
+        case AlgsModePtp:
+            if(AlgsPtp() != 0)
+            {
+                gAlgsMode = AlgsModeIdle;
+            }
+        break;
+    }
 
     jointAngleUpdate();
     
