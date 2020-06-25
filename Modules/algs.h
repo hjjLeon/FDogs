@@ -25,7 +25,8 @@ typedef struct
 
 typedef enum
 {
-    AlgsModeIdle = 1,
+    AlgsModePowOff=0,
+    AlgsModeIdle,
     AlgsModeJog,
     AlgsModePtp,
 }AlgsMode_t;
@@ -39,6 +40,21 @@ typedef enum
     AlgsJogCmdMax,
 }AlgsJogCmd_t;
 
+typedef enum
+{
+    LedRed = 1,
+    LedGreed,
+    LedBlue,
+    LedYellow,
+    LedWhite,
+}LedColor_t;
+
+typedef enum
+{
+    LedFlash = 1,
+    LedNormal,
+}LedMode_t;
+
 extern AlgsMode_t gAlgsMode;
 extern jointParam_t jointParam[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM];
 
@@ -50,6 +66,7 @@ void AlgsPtpPredeal(void);
 void AlgsJogPredeal(AlgsJogCmd_t cmd);
 
 void hhtKeyCheck(void);
+void ledStatusCheck(void);
 
 
 #endif

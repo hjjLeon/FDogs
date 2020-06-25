@@ -2,7 +2,7 @@
 #include "tim.h"
 #include "gpio.h"
 
-AlgsMode_t gAlgsMode = AlgsModeIdle;
+AlgsMode_t gAlgsMode = AlgsModePowOff;
 jointParam_t jointParam[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM] = {0};
 
 void jointAngleUpdate(void);
@@ -41,13 +41,28 @@ void jointServoOutput(void)
 
 void hhtKeyCheck(void)
 {
+    #define SERVO_POWER_PORT GPIOA
+    #define SERVO_POWER_PIN  GPIO_PIN_3
+    #define SERVO_POWER_ON    1
+
+
     static uint8_t keyStatusLast = 0;
 
     if(keyStatusLast == 1 && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 0)
     {
         //key press
 
-        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3);
+        switch(gAlgsMode)
+        {
+            case AlgsModePowOff:
+                gAlgsMode = AlgsModeIdle;
+                HAL_GPIO_WritePin(SERVO_POWER_PORT, SERVO_POWER_PIN, SERVO_POWER_ON);
+                break;
+            default:
+                gAlgsMode = AlgsModePowOff;
+                HAL_GPIO_WritePin(SERVO_POWER_PORT, SERVO_POWER_PIN, !SERVO_POWER_ON);
+                break;
+        }
 
         keyStatusLast = 0;
     }
@@ -59,6 +74,86 @@ void hhtKeyCheck(void)
 
         keyStatusLast = 1;
     }
+
+}
+
+void ledDisplay(LedColor_t color, LedMode_t mode)
+{
+    #define LED_ON 0
+    #define LED_OFF 1
+
+    #define LED_PORT GPIOC
+    #define LED_PIN_RED GPIO_PIN_0
+    #define LED_PIN_GREED GPIO_PIN_1
+    #define LED_PIN_BLUE GPIO_PIN_2
+
+    static uint8_t flashCount = 0;
+    uint16_t ledPinOn, ledPinOff;
+
+    flashCount++;
+    flashCount%=2;
+
+    switch(color)
+    {
+        case LedRed:
+            ledPinOn  = LED_PIN_RED;
+            ledPinOff = LED_PIN_GREED|LED_PIN_BLUE;
+        break;
+        case LedGreed:
+            ledPinOn  = LED_PIN_GREED;
+            ledPinOff = LED_PIN_RED|LED_PIN_BLUE;
+        break;
+        case LedBlue:
+            ledPinOn  = LED_PIN_BLUE;
+            ledPinOff = LED_PIN_GREED|LED_PIN_RED;
+        break;
+        case LedYellow:
+            ledPinOn  = LED_PIN_GREED|LED_PIN_RED;
+            ledPinOff = LED_PIN_BLUE;
+        break;
+    }
+
+
+    switch (mode)
+    {
+        case LedFlash:
+            HAL_GPIO_WritePin(LED_PORT, ledPinOn, flashCount);
+            HAL_GPIO_WritePin(LED_PORT, ledPinOff, LED_OFF);
+            break;
+        case LedNormal:
+            HAL_GPIO_WritePin(LED_PORT, ledPinOn, LED_ON);
+            HAL_GPIO_WritePin(LED_PORT, ledPinOff, LED_OFF);
+            break;
+        default:
+            break;
+    }
+}
+
+void ledStatusCheck(void)
+{
+    LedColor_t color = LedGreed;
+    LedMode_t mode = LedFlash;
+
+    switch(gAlgsMode)
+    {
+        case AlgsModePowOff:
+            color = LedRed;
+            mode = LedNormal;
+            break;
+        case AlgsModeIdle:
+            color = LedGreed;
+            mode = LedFlash;
+            break;
+        case AlgsModeJog:
+            color = LedGreed;
+            mode = LedNormal;
+            break;
+        case AlgsModePtp:
+            color = LedBlue;
+            mode = LedFlash;
+            break;
+    }
+    ledDisplay(color, mode);
 
 }
 
@@ -79,7 +174,7 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd)
     {
         gAlgsMode = AlgsModeIdle;
     }
-    else if(cmd < AlgsJogCmdMax)
+    else if(cmd < AlgsJogCmdMax && gAlgsMode == AlgsModeIdle)
     {
         gAlgsMode = AlgsModeJog;
     }

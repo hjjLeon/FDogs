@@ -278,9 +278,9 @@ void StartAlgsTask(void *argument)
     hhtKeyCheck();
 
     ledCount++;
-    if(ledCount >= 50)
+    if(ledCount >= 25)
     {
-      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2);
+      ledStatusCheck();
       ledCount = 0;
     }
   }
