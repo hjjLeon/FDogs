@@ -273,13 +273,16 @@ void StartAlgsTask(void *argument)
   for(;;)
   {
     osDelay(10);
+    algsProfile();
+
+    hhtKeyCheck();
+
     ledCount++;
     if(ledCount >= 50)
     {
       HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2);
       ledCount = 0;
     }
-    algsProfile();
   }
   /* USER CODE END StartAlgsTask */
 }

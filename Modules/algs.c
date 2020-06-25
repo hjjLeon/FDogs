@@ -1,13 +1,6 @@
 #include "algs.h"
 #include "tim.h"
-
-
-static uint32_t angle2arr(float angle)
-{
-  float temp = angle/180.0*2000;
-  temp += 500.0;
-  return (uint32_t)(temp/1.1125);
-}
+#include "gpio.h"
 
 AlgsMode_t gAlgsMode = AlgsModeIdle;
 jointParam_t jointParam[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM] = {0};
@@ -46,6 +39,29 @@ void jointServoOutput(void)
     htim2.Instance->CCR1 = jointParam[0][0].periodTickCount;
 }
 
+void hhtKeyCheck(void)
+{
+    static uint8_t keyStatusLast = 0;
+
+    if(keyStatusLast == 1 && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 0)
+    {
+        //key press
+
+        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3);
+
+        keyStatusLast = 0;
+    }
+    else if(keyStatusLast == 0 && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
+    {
+        //key relase
+
+
+
+        keyStatusLast = 1;
+    }
+
+}
+
 
 void AlgsJogPredeal(AlgsJogCmd_t cmd)
 {
@@ -71,13 +87,15 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd)
 
 void AlgsJog(void)
 {
-    jointParam[0][0].angleCurrent += jointParam[0][0].speed;
 
-    if((jointParam[0][0].angleCurrent > jointParam[0][0].angleMax && jointParam[0][0].speed > 0) ||
-    (jointParam[0][0].angleCurrent < jointParam[0][0].angleMin && jointParam[0][0].speed < 0))
+    if((jointParam[0][0].angleCurrent + jointParam[0][0].speed > jointParam[0][0].angleMax && jointParam[0][0].speed > 0) ||
+    (jointParam[0][0].angleCurrent + jointParam[0][0].speed < jointParam[0][0].angleMin && jointParam[0][0].speed < 0))
     {
-        jointParam[0][0].angleCurrent -= jointParam[0][0].speed;
         gAlgsMode = AlgsModeIdle;
+    }
+    else
+    {
+        jointParam[0][0].angleCurrent += jointParam[0][0].speed;
     }
 }
 

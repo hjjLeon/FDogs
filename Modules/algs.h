@@ -49,5 +49,8 @@ void algsProfile(void);
 void AlgsPtpPredeal(void);
 void AlgsJogPredeal(AlgsJogCmd_t cmd);
 
+void hhtKeyCheck(void);
+
+
 #endif
 
