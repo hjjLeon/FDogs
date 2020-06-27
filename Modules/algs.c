@@ -160,6 +160,9 @@ void ledStatusCheck(void)
 
 void AlgsJogPredeal(AlgsJogCmd_t cmd)
 {
+    if(gAlgsMode != AlgsModeIdle)
+        return;
+
     switch(cmd)
     {
         case AlgsJogPos:
@@ -174,7 +177,7 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd)
     {
         gAlgsMode = AlgsModeIdle;
     }
-    else if(cmd < AlgsJogCmdMax && gAlgsMode == AlgsModeIdle)
+    else if(cmd < AlgsJogCmdMax)
     {
         gAlgsMode = AlgsModeJog;
     }
