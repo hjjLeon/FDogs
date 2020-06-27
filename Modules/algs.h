@@ -3,8 +3,8 @@
 
 #include "main.h"
 
-#define ROBOT_LEG_NUM 1
-#define ROBOT_LEG_JOINT_NUM 1
+#define ROBOT_LEG_NUM 4
+#define ROBOT_LEG_JOINT_NUM 3
 
 //type define
 typedef struct 

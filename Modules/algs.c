@@ -42,7 +42,7 @@ void jointServoOutput(void)
 void hhtKeyCheck(void)
 {
     #define SERVO_POWER_PORT GPIOA
-    #define SERVO_POWER_PIN  GPIO_PIN_3
+    #define SERVO_POWER_PIN  GPIO_PIN_4
     #define SERVO_POWER_ON    1
 
 
@@ -160,9 +160,6 @@ void ledStatusCheck(void)
 
 void AlgsJogPredeal(AlgsJogCmd_t cmd)
 {
-    if(gAlgsMode != AlgsModeIdle)
-        return;
-
     switch(cmd)
     {
         case AlgsJogPos:
@@ -173,11 +170,11 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd)
         break;
     }
 
-    if(cmd == AlgsJogStop)
+    if(cmd == AlgsJogStop && gAlgsMode == AlgsModeJog)
     {
         gAlgsMode = AlgsModeIdle;
     }
-    else if(cmd < AlgsJogCmdMax)
+    else if(cmd < AlgsJogCmdMax && gAlgsMode == AlgsModeIdle)
     {
         gAlgsMode = AlgsModeJog;
     }

@@ -79,8 +79,12 @@ int main(void)
   SCB->VTOR = QSPI_BASE;
   #endif
   
-  float angle = 90.0;
-  uint8_t direction = 0;
+  /* Enable I-Cache---------------------------------------------------------*/
+  SCB_EnableICache();
+
+  /* Enable D-Cache---------------------------------------------------------*/
+  SCB_EnableDCache();
+  
   /* USER CODE END 1 */
   
 
@@ -122,41 +126,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_Delay(500);
-    // extern uint8_t UserRxBufferFS[];
-    // if(UserRxBufferFS[0] == 'A' &&
-    // UserRxBufferFS[1] == 'N' &&
-    // UserRxBufferFS[2] == 'G')
-    // {
-    //     angle = (UserRxBufferFS[3]-'0')*10+(UserRxBufferFS[4]-'0');
-    // }
-    extern float myAngle;
-    // sprintf((char*)cdcSendBuffer, "hello world!!\r\n");
-    //CDC_Transmit_FS(cdcSendBuffer, strlen(cdcSendBuffer));
-    /*if(direction == 0)
-    {
-      if(angle >= 180.0)
-      {
-        direction = !direction;
-        angle -= 90.0;
-      }
-      else
-      {
-        angle += 90.0;
-      }
-    }
-    else
-    {
-      if(angle <= 00.0)
-      {
-        direction = !direction;
-        angle += 90.0;
-      }
-      else
-      {
-        angle -= 90.0;
-      }
-    }*/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

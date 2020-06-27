@@ -228,22 +228,12 @@ void StartCommandTask(void *argument)
 {
     
                  
-  /* init code for USB_DEVICE */
-  MX_USB_DEVICE_Init();
+
+
 
   /* USER CODE BEGIN StartCommandTask */
-
+  MX_USB_DEVICE_Init();
   osDelay(1000);
-
-  // uint8_t buff[100];
-  // memset(buff, 0x66, 100);
-  // for(uint8_t i = 0; i < 16; i++)
-  // {
-  //   //sprintf(buff, "value is %d\r\n", i);
-  //   // osDelay(50);
-  //   while(CDC_Transmit_FS(buff, 64) != 0)
-  //     osDelay(5);
-  // }
 
 
   /* Infinite loop */
