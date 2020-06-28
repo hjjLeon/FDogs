@@ -40,6 +40,22 @@ typedef enum
     AlgsJogCmdMax,
 }AlgsJogCmd_t;
 
+typedef struct
+{
+    float x;
+    float y;
+    float z;
+}WCSPosition;
+
+typedef struct
+{
+    float theta1;
+    float theta2;
+    float theta3;
+}JointTheta;
+
+
+/*******LED********/
 typedef enum
 {
     LedRed = 1,

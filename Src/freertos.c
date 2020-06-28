@@ -226,11 +226,6 @@ osKernelInitialize();
 /* USER CODE END Header_StartCommandTask */
 void StartCommandTask(void *argument)
 {
-    
-                 
-
-
-
   /* USER CODE BEGIN StartCommandTask */
   MX_USB_DEVICE_Init();
   osDelay(1000);

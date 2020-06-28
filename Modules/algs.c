@@ -5,6 +5,48 @@
 AlgsMode_t gAlgsMode = AlgsModePowOff;
 jointParam_t jointParam[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM] = {0};
 
+
+#include "math.h"
+
+#define LENTH_D 20
+#define LENTH_L1 80
+#define LENTH_L2 100
+
+int InverseCal(WCSPosition *pPosition, JointTheta *pTheta)
+{
+    float x, y, z, d, L1, L2;
+    float ATp, AT, TC, AC, Theta_ATTp, Theta_TAC;
+    float Theta1, Theta2, Theta3;
+
+    x = pPosition->x;
+    y = pPosition->y;
+    z = pPosition->z;
+
+
+    ATp = sqrt(pow(z, 2) + pow(y, 2) - pow(d, 2));
+
+    pTheta->theta1 = atan(z / y) + atan(ATp / d);
+
+    AT = sqrt(pow(x, 2) + pow(ATp, 2));
+
+    pTheta->theta2 = acos((pow(L1, 2) + pow(L2, 2) - AT) / (2 * L1 * L2));
+
+    TC = L2 * sin(pTheta->theta2);
+    AC = L1 - L2 * cos(pTheta->theta2);
+
+    Theta_ATTp = atan(ATp / x);
+    Theta_TAC = atan(TC / AC);
+
+    pTheta->theta3 = Theta_ATTp + Theta_TAC;
+
+    if(x < 0)
+        pTheta->theta3 += 3.1415926;
+
+    pTheta->theta1 = Theta1/3.1415926*180.0;
+    pTheta->theta2 = Theta2/3.1415926*180.0;
+    pTheta->theta3 = Theta3/3.1415926*180.0;
+}
+
 void jointAngleUpdate(void);
 
 void jointParamInit(void)
