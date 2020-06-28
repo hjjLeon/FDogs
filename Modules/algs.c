@@ -11,6 +11,7 @@ jointParam_t jointParam[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM] = {0};
 #define LENTH_D 20
 #define LENTH_L1 80
 #define LENTH_L2 100
+#define PI 3.1415926
 
 int InverseCal(WCSPosition *pPosition, JointTheta *pTheta)
 {
@@ -18,33 +19,68 @@ int InverseCal(WCSPosition *pPosition, JointTheta *pTheta)
     float ATp, AT, TC, AC, Theta_ATTp, Theta_TAC;
     float Theta1, Theta2, Theta3;
 
+    d = LENTH_D;
+    L1 = LENTH_L1;
+    L2 = LENTH_L2;
+
     x = pPosition->x;
     y = pPosition->y;
     z = pPosition->z;
 
 
     ATp = sqrt(pow(z, 2) + pow(y, 2) - pow(d, 2));
+    // printf("ATp = %f\r\n", ATp);
 
-    pTheta->theta1 = atan(z / y) + atan(ATp / d);
+    
+    Theta1 = atan(ATp / d) - atan(fabs(z) / y);
 
     AT = sqrt(pow(x, 2) + pow(ATp, 2));
+    // printf("AT = %f\r\n", AT);
 
-    pTheta->theta2 = acos((pow(L1, 2) + pow(L2, 2) - AT) / (2 * L1 * L2));
+    Theta3 = acos((pow(L1, 2) + pow(L2, 2) - pow(AT, 2)) / (2 * L1 * L2));
 
-    TC = L2 * sin(pTheta->theta2);
-    AC = L1 - L2 * cos(pTheta->theta2);
+    TC = L2 * sin(Theta3);
+    // printf("TC = %f\r\n", TC);
+    AC = L1 - L2 * cos(Theta3);
+    // printf("AC = %f\r\n", AC);
 
-    Theta_ATTp = atan(ATp / x);
+    Theta_ATTp = atan(ATp / (x));
     Theta_TAC = atan(TC / AC);
+    
+    // printf("Theta_ATTp = %f\r\n", Theta_ATTp/PI*180.0);
+    // printf("Theta_TAC = %f\r\n", Theta_TAC/PI*180.0);
 
-    pTheta->theta3 = Theta_ATTp + Theta_TAC;
+    if(Theta_TAC < 0.0) 
+        Theta_TAC += PI;
 
-    if(x < 0)
-        pTheta->theta3 += 3.1415926;
+    if(x > 0)
+    {
+        if(z > 0)
+        {
+            Theta_ATTp = 2*PI - Theta_ATTp;
+        }
+        else
+        {
+            Theta_ATTp;
+        }
+    }
+    else
+    {
+        if(z > 0)
+        {
+            Theta_ATTp = fabs(Theta_ATTp) + PI;
+        }
+        else
+        {
+            Theta_ATTp += PI;
+        }
+    }
 
-    pTheta->theta1 = Theta1/3.1415926*180.0;
-    pTheta->theta2 = Theta2/3.1415926*180.0;
-    pTheta->theta3 = Theta3/3.1415926*180.0;
+    Theta2 = Theta_ATTp + Theta_TAC;
+
+    pTheta->theta1 = Theta1/PI*180.0;
+    pTheta->theta2 = Theta2/PI*180.0;
+    pTheta->theta3 = Theta3/PI*180.0;
 }
 
 void jointAngleUpdate(void);
@@ -56,10 +92,16 @@ void jointParamInit(void)
     jointParam[0][0].speedPesent = 100.0;
     jointParam[0][0].angleMax = 55.0;
     jointParam[0][0].angleMin = -30.0;
+    jointParam[0][1].zeroPosition = 90.0;
+    jointParam[0][1].angleCurrent = 0;
+    jointParam[0][1].speedPesent = 100.0;
+    jointParam[0][1].angleMax = 55.0;
+    jointParam[0][1].angleMin = -30.0;
     jointAngleUpdate();
 
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
 }
 
 void jointAngleUpdate(void)
@@ -73,12 +115,15 @@ void jointAngleUpdate(void)
     // }
     jointParam[0][0].angleRaw = (jointParam[0][0].angleCurrent/16.0*20.0+jointParam[0][0].zeroPosition);
     jointParam[0][0].periodTickCount = (uint32_t)(((jointParam[0][0].angleRaw)*11.11111111111111*240+120000)/27) - 1;
+    jointParam[0][1].angleRaw = (jointParam[0][1].angleCurrent/16.0*20.0+jointParam[0][1].zeroPosition);
+    jointParam[0][1].periodTickCount = (uint32_t)(((jointParam[0][0].angleRaw)*11.11111111111111*240+120000)/27) - 1;
 
 }
 
 void jointServoOutput(void)
 {
     htim2.Instance->CCR1 = jointParam[0][0].periodTickCount;
+    htim2.Instance->CCR2 = jointParam[0][1].periodTickCount;
 }
 
 void hhtKeyCheck(void)
