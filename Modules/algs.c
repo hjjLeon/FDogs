@@ -4,6 +4,7 @@
 
 AlgsMode_t gAlgsMode = AlgsModePowOff;
 jointParam_t jointParam[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM] = {0};
+legParam_t   legParam[ROBOT_LEG_NUM] = {0};
 
 
 #include "math.h"
@@ -78,52 +79,82 @@ int InverseCal(WCSPosition *pPosition, JointTheta *pTheta)
 
     Theta2 = Theta_ATTp + Theta_TAC;
 
-    pTheta->theta1 = Theta1/PI*180.0;
-    pTheta->theta2 = Theta2/PI*180.0;
-    pTheta->theta3 = Theta3/PI*180.0;
+    pTheta->theta1 = fmod(Theta1/PI*180.0, 360.0);
+    pTheta->theta2 = fmod(Theta2/PI*180.0, 360.0);
+    pTheta->theta3 = fmod(Theta3/PI*180.0, 360.0);
+
+    pTheta->theta2 -= 180.0;
+    pTheta->theta3 -= 90.0 ;
 }
 
 void jointAngleUpdate(void);
 
 void jointParamInit(void)
 {
-    jointParam[0][0].zeroPosition = 90.0;
     jointParam[0][0].angleCurrent = 0;
-    jointParam[0][0].speedPesent = 100.0;
-    jointParam[0][0].angleMax = 55.0;
+    jointParam[0][0].PwmRegist = htim2.Instance->CCR1;
+    jointParam[0][0].direction = 1;
+    jointParam[0][0].rate = 1;
+    jointParam[0][0].zeroPosition = 90.0;
+    jointParam[0][0].speedPesent = 50.0;
+    jointParam[0][0].angleMax = 30.0;
     jointParam[0][0].angleMin = -30.0;
-    jointParam[0][1].zeroPosition = 90.0;
+
+    
     jointParam[0][1].angleCurrent = 0;
+    jointParam[0][1].PwmRegist = htim2.Instance->CCR2;
+    jointParam[0][1].direction = 1;
+    jointParam[0][1].rate = 1;
+    jointParam[0][1].zeroPosition = 90.0;
     jointParam[0][1].speedPesent = 100.0;
-    jointParam[0][1].angleMax = 55.0;
-    jointParam[0][1].angleMin = -30.0;
+    jointParam[0][1].angleMax = 90.0;
+    jointParam[0][1].angleMin = -90.0;
+
+    jointParam[0][2].angleCurrent = 0;
+    jointParam[0][2].PwmRegist = htim2.Instance->CCR4;
+    jointParam[0][2].direction = -1;
+    jointParam[0][2].rate = 20.0/16.0;
+    jointParam[0][2].zeroPosition = 90.0;
+    jointParam[0][2].speedPesent = 100.0;
+    jointParam[0][2].angleMax = 55.0;
+    jointParam[0][2].angleMin = -30.0;
+
     jointAngleUpdate();
 
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 }
 
 void jointAngleUpdate(void)
 {
-    // for(uint8_t i; i < ROBOT_LEG_NUM; i++)
-    // {
-    //     for(uint8_t j; j < ROBOT_LEG_JOINT_NUM; j++)
-    //     {
+    jointParam_t *pJ;
 
-    //     }
-    // }
-    jointParam[0][0].angleRaw = (jointParam[0][0].angleCurrent/16.0*20.0+jointParam[0][0].zeroPosition);
-    jointParam[0][0].periodTickCount = (uint32_t)(((jointParam[0][0].angleRaw)*11.11111111111111*240+120000)/27) - 1;
-    jointParam[0][1].angleRaw = (jointParam[0][1].angleCurrent/16.0*20.0+jointParam[0][1].zeroPosition);
-    jointParam[0][1].periodTickCount = (uint32_t)(((jointParam[0][0].angleRaw)*11.11111111111111*240+120000)/27) - 1;
-
+    for(uint8_t i = 0; i < ROBOT_LEG_NUM; i++)
+    {
+        for(uint8_t j = 0; j< ROBOT_LEG_JOINT_NUM; j++)
+        {
+            pJ = &jointParam[i][j];
+            pJ->angleRaw = (pJ->angleCurrent * pJ->rate * pJ->direction + 
+                            (pJ->direction>0?pJ->zeroPosition:(180.0 - pJ->zeroPosition)));
+            pJ->periodTickCount = (uint32_t)(((pJ->angleRaw)*11.11111111111111*240.0+120000.0)/27.0) - 1;
+        }
+    }
 }
 
-void jointServoOutput(void)
+void jointServoOutput(uint8_t i)
 {
-    htim2.Instance->CCR1 = jointParam[0][0].periodTickCount;
-    htim2.Instance->CCR2 = jointParam[0][1].periodTickCount;
+    jointParam_t *pJ;
+    if(i >= ROBOT_LEG_NUM)
+        return;
+
+    for(uint8_t j = 0; j < ROBOT_LEG_JOINT_NUM; j++)
+    {
+        pJ = &jointParam[i][j];
+        if(pJ->PwmRegist != NULL)
+            pJ->PwmRegist = pJ->periodTickCount;
+    }
 }
 
 void hhtKeyCheck(void)
@@ -244,16 +275,35 @@ void ledStatusCheck(void)
 
 }
 
-
-void AlgsJogPredeal(AlgsJogCmd_t cmd)
+static uint8_t sJogLeg, sJogIndex;
+static AlgsJogCmd_t sJogCmd;
+void AlgsJogPredeal(AlgsJogCmd_t cmd, uint8_t leg, uint8_t index)
 {
+    jointParam_t *pJ = NULL;
+    legParam_t   *pL = NULL;
+
+    #define DEG_PER_Ms_MAX (60.0/130.0)
+    #define MM_PER_MS_MAX (2.0)
+
     switch(cmd)
     {
-        case AlgsJogPos:
-            jointParam[0][0].speed = 10.0*(60.0/130.0)*(16.0/20.0)*(jointParam[0][0].speedPesent/100.0);//deg/10ms
+        case AlgsJogJointPos:
+            pJ = &jointParam[leg][index];
+            pJ->speed = 10.0*(DEG_PER_Ms_MAX)*(1.0/pJ->rate)*(pJ->speedPesent/100.0);//deg/10ms
         break;
-        case AlgsJogNeg:
-            jointParam[0][0].speed = -10.0*(60.0/130.0)*(16.0/20.0)*(jointParam[0][0].speedPesent/100.0);//deg/10ms
+        case AlgsJogJointNeg:
+            pJ = &jointParam[leg][index];
+            pJ->speed = -10.0*(DEG_PER_Ms_MAX)*(1.0/pJ->rate)*(pJ->speedPesent/100.0);//deg/10ms
+        break;
+        case AlgsJogPosPos:
+            pL = &legParam[leg];
+            pL->speed = 10.0*(MM_PER_MS_MAX)*(pJ->speedPesent/100.0);//mm/10ms
+        break;
+        case AlgsJogPosNeg:
+            pL = &legParam[leg];
+            pL->speed = -10.0*(MM_PER_MS_MAX)*(pJ->speedPesent/100.0);//mm/10ms
+        break;
+        default:
         break;
     }
 
@@ -264,12 +314,14 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd)
     else if(cmd < AlgsJogCmdMax && gAlgsMode == AlgsModeIdle)
     {
         gAlgsMode = AlgsModeJog;
+        sJogCmd = cmd;
+        sJogLeg = leg;
+        sJogIndex = index;
     }
 }
 
 void AlgsJog(void)
 {
-
     if((jointParam[0][0].angleCurrent + jointParam[0][0].speed > jointParam[0][0].angleMax && jointParam[0][0].speed > 0) ||
     (jointParam[0][0].angleCurrent + jointParam[0][0].speed < jointParam[0][0].angleMin && jointParam[0][0].speed < 0))
     {
@@ -279,6 +331,35 @@ void AlgsJog(void)
     {
         jointParam[0][0].angleCurrent += jointParam[0][0].speed;
     }
+
+    jointParam_t *pJ = NULL;
+    legParam_t   *pL = NULL;
+
+    pJ = &jointParam[sJogLeg][sJogIndex];
+    pL = &legParam[sJogLeg];
+
+    switch(sJogCmd)
+    {
+        case AlgsJogJointPos:
+        case AlgsJogJointNeg:
+            pJ->angleCurrent += pJ->speed;
+        break;
+        case AlgsJogPosPos:
+        case AlgsJogPosNeg:
+            JointTheta  joint;
+            *(&(pL->positionOwn.x) + sJogIndex) += pL->speed;
+            InverseCal(&pL->positionOwn, &joint);
+            jointParam[sJogLeg][0].angleCurrent = joint.theta1;
+            jointParam[sJogLeg][1].angleCurrent = joint.theta2;
+            jointParam[sJogLeg][2].angleCurrent = joint.theta3;
+        break;
+    }
+}
+
+
+void algsMoveJSlgPredeal(void)
+{
+
 }
 
 void AlgsPtpPredeal(void)
@@ -317,6 +398,24 @@ uint8_t AlgsPtp(void)
     return 0;
 }
 
+void algsAxisCheck(uint8_t leg)
+{
+    jointParam_t *pJ = NULL;
+
+    for(uint8_t i; i < ROBOT_LEG_JOINT_NUM; i++)
+    {
+        pJ = &jointParam[leg][i];
+        if(pJ->angleCurrent > pJ->angleMax)
+        {
+            pJ->angleCurrent = pJ->angleMax;
+        }
+        else if(pJ->angleCurrent < pJ->angleMin)
+        {
+            pJ->angleCurrent = pJ->angleMin;
+        }
+    }
+}
+
 void algsProfile()
 {
 
@@ -335,6 +434,10 @@ void algsProfile()
         break;
     }
 
+    for(uint8_t i = 0; i < ROBOT_LEG_NUM; i++)
+    {
+        algsAxisCheck(i);
+    }
     jointAngleUpdate();
     
 }

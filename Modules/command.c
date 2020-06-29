@@ -149,16 +149,17 @@ void setMinCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 
 void jogCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 {
-    uint8_t index, jogcmd;
+    uint8_t jogcmd, leg, index;
     if(rw)
     {
-        if(*paramLenth == 2)
+        if(*paramLenth == 3)
         {
-            index = ((uint8_t*)param)[0];
-            jogcmd = ((uint8_t*)param)[1];
+            jogcmd = ((uint8_t*)param)[0];
+            leg = ((uint8_t*)param)[1];
+            index = ((uint8_t*)param)[2];
 
             if(jogcmd < AlgsJogCmdMax)
-                AlgsJogPredeal(jogcmd);
+                AlgsJogPredeal(jogcmd, leg, index);
         }
         
         *paramLenth = 0;
@@ -200,6 +201,27 @@ void goCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
     }
 }
 
+
+void moveLSlgCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+
+}
+
+void moveJSlgCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
+{
+    if(rw)
+    {
+        if(*paramLenth == )
+
+        *paramLenth = 0;
+    }
+    else
+    {
+        *paramLenth = 0;
+    }
+    
+}
+
 CommList_t commList[] = {
     {0, testCmdFunc},
 
@@ -212,6 +234,8 @@ CommList_t commList[] = {
     {30, jogCmdFunc},
 
     {40, goCmdFunc},
+    {41, moveLSlgCmdFunc},
+    {42, moveJSlgCmdFunc},
 
     {255, NULL},
 };
