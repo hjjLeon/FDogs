@@ -70,15 +70,6 @@ typedef enum
 }AlgsJogCmd_t;
 
 
-/*******Move********/
-
-typedef struct
-{
-    float x;
-    float y;
-};
-
-
 /*******LED********/
 typedef enum
 {

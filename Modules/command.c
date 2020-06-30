@@ -211,7 +211,7 @@ void moveJSlgCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 {
     if(rw)
     {
-        if(*paramLenth == )
+        //if(*paramLenth == )
 
         *paramLenth = 0;
     }

@@ -92,7 +92,7 @@ void jointAngleUpdate(void);
 void jointParamInit(void)
 {
     jointParam[0][0].angleCurrent = 0;
-    jointParam[0][0].PwmRegist = htim2.Instance->CCR1;
+    jointParam[0][0].PwmRegist = (uint32_t*)&(htim2.Instance->CCR1);
     jointParam[0][0].direction = 1;
     jointParam[0][0].rate = 1;
     jointParam[0][0].zeroPosition = 90.0;
@@ -102,7 +102,7 @@ void jointParamInit(void)
 
     
     jointParam[0][1].angleCurrent = 0;
-    jointParam[0][1].PwmRegist = htim2.Instance->CCR2;
+    jointParam[0][1].PwmRegist = (uint32_t*)&(htim2.Instance->CCR2);
     jointParam[0][1].direction = 1;
     jointParam[0][1].rate = 1;
     jointParam[0][1].zeroPosition = 90.0;
@@ -111,13 +111,18 @@ void jointParamInit(void)
     jointParam[0][1].angleMin = -90.0;
 
     jointParam[0][2].angleCurrent = 0;
-    jointParam[0][2].PwmRegist = htim2.Instance->CCR4;
+    jointParam[0][2].PwmRegist = (uint32_t*)&(htim2.Instance->CCR4);
     jointParam[0][2].direction = -1;
     jointParam[0][2].rate = 20.0/16.0;
     jointParam[0][2].zeroPosition = 90.0;
     jointParam[0][2].speedPesent = 100.0;
     jointParam[0][2].angleMax = 55.0;
     jointParam[0][2].angleMin = -30.0;
+
+    legParam[0].positionOwn.x = -80;
+    legParam[0].positionOwn.y = 20;
+    legParam[0].positionOwn.z = -100;
+    legParam[0].speed = 50.0;
 
     jointAngleUpdate();
 
@@ -153,7 +158,7 @@ void jointServoOutput(uint8_t i)
     {
         pJ = &jointParam[i][j];
         if(pJ->PwmRegist != NULL)
-            pJ->PwmRegist = pJ->periodTickCount;
+            *(pJ->PwmRegist) = pJ->periodTickCount;
     }
 }
 
@@ -283,7 +288,7 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd, uint8_t leg, uint8_t index)
     legParam_t   *pL = NULL;
 
     #define DEG_PER_Ms_MAX (60.0/130.0)
-    #define MM_PER_MS_MAX (2.0)
+    #define MM_PER_MS_MAX (0.20)
 
     switch(cmd)
     {
@@ -297,11 +302,11 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd, uint8_t leg, uint8_t index)
         break;
         case AlgsJogPosPos:
             pL = &legParam[leg];
-            pL->speed = 10.0*(MM_PER_MS_MAX)*(pJ->speedPesent/100.0);//mm/10ms
+            pL->speed = 10.0*(MM_PER_MS_MAX)*(jointParam[0][0].speedPesent/100.0);//mm/10ms
         break;
         case AlgsJogPosNeg:
             pL = &legParam[leg];
-            pL->speed = -10.0*(MM_PER_MS_MAX)*(pJ->speedPesent/100.0);//mm/10ms
+            pL->speed = -10.0*(MM_PER_MS_MAX)*(jointParam[0][0].speedPesent/100.0);//mm/10ms
         break;
         default:
         break;
