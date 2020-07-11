@@ -91,45 +91,74 @@ void jointAngleUpdate(void);
 
 void jointParamInit(void)
 {
-    jointParam[0][0].angleCurrent = 0;
+
+    for(uint8_t i = 0; i < ROBOT_LEG_NUM; i++)
+    {
+
+        jointParam[i][0].angleCurrent = 0;
+        jointParam[i][0].direction = 1;
+        jointParam[i][0].rate = 1;
+        jointParam[i][0].zeroPosition = 90.0;
+        jointParam[i][0].speedPesent = 50.0;
+        jointParam[i][0].angleMax = 30.0;
+        jointParam[i][0].angleMin = -30.0;
+
+        
+        jointParam[i][1].angleCurrent = 0;
+        jointParam[i][1].direction = 1;
+        jointParam[i][1].rate = 1;
+        jointParam[i][1].zeroPosition = 90.0;
+        jointParam[i][1].speedPesent = 100.0;
+        jointParam[i][1].angleMax = 90.0;
+        jointParam[i][1].angleMin = -90.0;
+
+        jointParam[i][2].angleCurrent = 0;
+        jointParam[i][2].direction = -1;
+        jointParam[i][2].rate = 20.0/16.0;
+        jointParam[i][2].zeroPosition = 90.0;
+        jointParam[i][2].speedPesent = 100.0;
+        jointParam[i][2].angleMax = 55.0;
+        jointParam[i][2].angleMin = -30.0;
+
+        legParam[i].positionOwn.x = -80;
+        legParam[i].positionOwn.y = 20;
+        legParam[i].positionOwn.z = -100;
+        legParam[i].speed = 50.0;
+    }
+
     jointParam[0][0].PwmRegist = (uint32_t*)&(htim2.Instance->CCR1);
-    jointParam[0][0].direction = 1;
-    jointParam[0][0].rate = 1;
-    jointParam[0][0].zeroPosition = 90.0;
-    jointParam[0][0].speedPesent = 50.0;
-    jointParam[0][0].angleMax = 30.0;
-    jointParam[0][0].angleMin = -30.0;
-
-    
-    jointParam[0][1].angleCurrent = 0;
     jointParam[0][1].PwmRegist = (uint32_t*)&(htim2.Instance->CCR2);
-    jointParam[0][1].direction = 1;
-    jointParam[0][1].rate = 1;
-    jointParam[0][1].zeroPosition = 90.0;
-    jointParam[0][1].speedPesent = 100.0;
-    jointParam[0][1].angleMax = 90.0;
-    jointParam[0][1].angleMin = -90.0;
-
-    jointParam[0][2].angleCurrent = 0;
     jointParam[0][2].PwmRegist = (uint32_t*)&(htim2.Instance->CCR4);
-    jointParam[0][2].direction = -1;
-    jointParam[0][2].rate = 20.0/16.0;
-    jointParam[0][2].zeroPosition = 90.0;
-    jointParam[0][2].speedPesent = 100.0;
-    jointParam[0][2].angleMax = 55.0;
-    jointParam[0][2].angleMin = -30.0;
-
-    legParam[0].positionOwn.x = -80;
-    legParam[0].positionOwn.y = 20;
-    legParam[0].positionOwn.z = -100;
-    legParam[0].speed = 50.0;
-
+    jointParam[1][0].PwmRegist = (uint32_t*)&(htim3.Instance->CCR1);
+    jointParam[1][1].PwmRegist = (uint32_t*)&(htim3.Instance->CCR2);
+    jointParam[1][2].PwmRegist = (uint32_t*)&(htim3.Instance->CCR3);
+    jointParam[2][0].PwmRegist = (uint32_t*)&(htim4.Instance->CCR1);
+    jointParam[2][1].PwmRegist = (uint32_t*)&(htim4.Instance->CCR2);
+    jointParam[2][2].PwmRegist = (uint32_t*)&(htim4.Instance->CCR3);
+    jointParam[3][0].PwmRegist = (uint32_t*)&(htim5.Instance->CCR1);
+    jointParam[3][1].PwmRegist = (uint32_t*)&(htim5.Instance->CCR3);
+    jointParam[3][2].PwmRegist = (uint32_t*)&(htim5.Instance->CCR4);
     jointAngleUpdate();
 
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+
+    __HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+
+    __HAL_TIM_ENABLE_IT(&htim4, TIM_IT_UPDATE);
+    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
+
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
+    HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_4);
 }
 
 void jointAngleUpdate(void)
