@@ -22,6 +22,8 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "crc.h"
+#include "quadspi.h"
+#include "spi.h"
 #include "tim.h"
 #include "usb_device.h"
 #include "gpio.h"
@@ -86,7 +88,6 @@ int main(void)
   SCB_EnableDCache();
   
   /* USER CODE END 1 */
-  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -108,20 +109,21 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_CRC_Init();
+  MX_SPI2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_TIM5_Init();
+  // MX_QUADSPI_Init();
   /* USER CODE BEGIN 2 */
   /* USER CODE END 2 */
 
-  /* Call init function for freertos objects (in freertos.c) */
+  /* Init scheduler */
+  osKernelInitialize();  /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init(); 
-
   /* Start scheduler */
   osKernelStart();
-  
+ 
   /* We should never get here as control is now taken by the scheduler */
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -189,7 +191,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2|RCC_PERIPHCLK_USB
+                              |RCC_PERIPHCLK_QSPI;
   PeriphClkInitStruct.PLL3.PLL3M = 1;
   PeriphClkInitStruct.PLL3.PLL3N = 120;
   PeriphClkInitStruct.PLL3.PLL3P = 2;
@@ -198,6 +201,8 @@ void SystemClock_Config(void)
   PeriphClkInitStruct.PLL3.PLL3RGE = RCC_PLL3VCIRANGE_3;
   PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOWIDE;
   PeriphClkInitStruct.PLL3.PLL3FRACN = 0;
+  PeriphClkInitStruct.QspiClockSelection = RCC_QSPICLKSOURCE_D1HCLK;
+  PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
   PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL3;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
@@ -212,7 +217,7 @@ void SystemClock_Config(void)
 
 /* USER CODE END 4 */
 
-/**
+ /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM6 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment

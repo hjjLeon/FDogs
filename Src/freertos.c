@@ -32,6 +32,7 @@
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
+typedef StaticQueue_t osStaticMessageQDef_t;
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
@@ -50,26 +51,87 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-typedef StaticQueue_t osStaticMessageQDef_t;
+/* Definitions for commandTask */
 osThreadId_t commandTaskHandle;
+const osThreadAttr_t commandTask_attributes = {
+  .name = "commandTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4
+};
+/* Definitions for AlgsTask */
 osThreadId_t AlgsTaskHandle;
+const osThreadAttr_t AlgsTask_attributes = {
+  .name = "AlgsTask",
+  .priority = (osPriority_t) osPriorityRealtime,
+  .stack_size = 512 * 4
+};
+/* Definitions for RawSendTask */
 osThreadId_t RawSendTaskHandle;
+const osThreadAttr_t RawSendTask_attributes = {
+  .name = "RawSendTask",
+  .priority = (osPriority_t) osPriorityHigh,
+  .stack_size = 512 * 4
+};
+/* Definitions for portRawDataRx */
 osMessageQueueId_t portRawDataRxHandle;
 uint8_t portRawDataRxBuffer[ 2048 * sizeof( uint8_t ) ];
 osStaticMessageQDef_t portRawDataRxControlBlock;
+const osMessageQueueAttr_t portRawDataRx_attributes = {
+  .name = "portRawDataRx",
+  .cb_mem = &portRawDataRxControlBlock,
+  .cb_size = sizeof(portRawDataRxControlBlock),
+  .mq_mem = &portRawDataRxBuffer,
+  .mq_size = sizeof(portRawDataRxBuffer)
+};
+/* Definitions for cmdPacketRx */
 osMessageQueueId_t cmdPacketRxHandle;
 uint8_t cmdPacketRxBuffer[ 16 * 64 ];
 osStaticMessageQDef_t cmdPacketRxControlBlock;
+const osMessageQueueAttr_t cmdPacketRx_attributes = {
+  .name = "cmdPacketRx",
+  .cb_mem = &cmdPacketRxControlBlock,
+  .cb_size = sizeof(cmdPacketRxControlBlock),
+  .mq_mem = &cmdPacketRxBuffer,
+  .mq_size = sizeof(cmdPacketRxBuffer)
+};
+/* Definitions for cmdPacketTx */
 osMessageQueueId_t cmdPacketTxHandle;
 uint8_t cmdPacketTxBuffer[ 16 * 64 ];
 osStaticMessageQDef_t cmdPacketTxControlBlock;
+const osMessageQueueAttr_t cmdPacketTx_attributes = {
+  .name = "cmdPacketTx",
+  .cb_mem = &cmdPacketTxControlBlock,
+  .cb_size = sizeof(cmdPacketTxControlBlock),
+  .mq_mem = &cmdPacketTxBuffer,
+  .mq_size = sizeof(cmdPacketTxBuffer)
+};
+/* Definitions for portRawDataTx */
 osMessageQueueId_t portRawDataTxHandle;
 uint8_t portRawDataTxBuffer[ 2048 * sizeof( uint8_t ) ];
 osStaticMessageQDef_t portRawDataTxControlBlock;
+const osMessageQueueAttr_t portRawDataTx_attributes = {
+  .name = "portRawDataTx",
+  .cb_mem = &portRawDataTxControlBlock,
+  .cb_size = sizeof(portRawDataTxControlBlock),
+  .mq_mem = &portRawDataTxBuffer,
+  .mq_size = sizeof(portRawDataTxBuffer)
+};
+/* Definitions for cmdPacketRxInstant */
 osMessageQueueId_t cmdPacketRxInstantHandle;
 uint8_t cmdPacketRxInstantBuffer[ 16 * 64 ];
 osStaticMessageQDef_t cmdPacketRxInstantControlBlock;
+const osMessageQueueAttr_t cmdPacketRxInstant_attributes = {
+  .name = "cmdPacketRxInstant",
+  .cb_mem = &cmdPacketRxInstantControlBlock,
+  .cb_size = sizeof(cmdPacketRxInstantControlBlock),
+  .mq_mem = &cmdPacketRxInstantBuffer,
+  .mq_size = sizeof(cmdPacketRxInstantBuffer)
+};
+/* Definitions for portRawDataMutex */
 osMutexId_t portRawDataMutexHandle;
+const osMutexAttr_t portRawDataMutex_attributes = {
+  .name = "portRawDataMutex"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -110,13 +172,8 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
        
   /* USER CODE END Init */
-osKernelInitialize();
-
   /* Create the mutex(es) */
-  /* definition and creation of portRawDataMutex */
-  const osMutexAttr_t portRawDataMutex_attributes = {
-    .name = "portRawDataMutex"
-  };
+  /* creation of portRawDataMutex */
   portRawDataMutexHandle = osMutexNew(&portRawDataMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -132,54 +189,19 @@ osKernelInitialize();
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* definition and creation of portRawDataRx */
-  const osMessageQueueAttr_t portRawDataRx_attributes = {
-    .name = "portRawDataRx",
-    .cb_mem = &portRawDataRxControlBlock,
-    .cb_size = sizeof(portRawDataRxControlBlock),
-    .mq_mem = &portRawDataRxBuffer,
-    .mq_size = sizeof(portRawDataRxBuffer)
-  };
+  /* creation of portRawDataRx */
   portRawDataRxHandle = osMessageQueueNew (2048, sizeof(uint8_t), &portRawDataRx_attributes);
 
-  /* definition and creation of cmdPacketRx */
-  const osMessageQueueAttr_t cmdPacketRx_attributes = {
-    .name = "cmdPacketRx",
-    .cb_mem = &cmdPacketRxControlBlock,
-    .cb_size = sizeof(cmdPacketRxControlBlock),
-    .mq_mem = &cmdPacketRxBuffer,
-    .mq_size = sizeof(cmdPacketRxBuffer)
-  };
+  /* creation of cmdPacketRx */
   cmdPacketRxHandle = osMessageQueueNew (16, 64, &cmdPacketRx_attributes);
 
-  /* definition and creation of cmdPacketTx */
-  const osMessageQueueAttr_t cmdPacketTx_attributes = {
-    .name = "cmdPacketTx",
-    .cb_mem = &cmdPacketTxControlBlock,
-    .cb_size = sizeof(cmdPacketTxControlBlock),
-    .mq_mem = &cmdPacketTxBuffer,
-    .mq_size = sizeof(cmdPacketTxBuffer)
-  };
+  /* creation of cmdPacketTx */
   cmdPacketTxHandle = osMessageQueueNew (16, 64, &cmdPacketTx_attributes);
 
-  /* definition and creation of portRawDataTx */
-  const osMessageQueueAttr_t portRawDataTx_attributes = {
-    .name = "portRawDataTx",
-    .cb_mem = &portRawDataTxControlBlock,
-    .cb_size = sizeof(portRawDataTxControlBlock),
-    .mq_mem = &portRawDataTxBuffer,
-    .mq_size = sizeof(portRawDataTxBuffer)
-  };
+  /* creation of portRawDataTx */
   portRawDataTxHandle = osMessageQueueNew (2048, sizeof(uint8_t), &portRawDataTx_attributes);
 
-  /* definition and creation of cmdPacketRxInstant */
-  const osMessageQueueAttr_t cmdPacketRxInstant_attributes = {
-    .name = "cmdPacketRxInstant",
-    .cb_mem = &cmdPacketRxInstantControlBlock,
-    .cb_size = sizeof(cmdPacketRxInstantControlBlock),
-    .mq_mem = &cmdPacketRxInstantBuffer,
-    .mq_size = sizeof(cmdPacketRxInstantBuffer)
-  };
+  /* creation of cmdPacketRxInstant */
   cmdPacketRxInstantHandle = osMessageQueueNew (16, 64, &cmdPacketRxInstant_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -187,28 +209,13 @@ osKernelInitialize();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of commandTask */
-  const osThreadAttr_t commandTask_attributes = {
-    .name = "commandTask",
-    .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 256
-  };
+  /* creation of commandTask */
   commandTaskHandle = osThreadNew(StartCommandTask, NULL, &commandTask_attributes);
 
-  /* definition and creation of AlgsTask */
-  const osThreadAttr_t AlgsTask_attributes = {
-    .name = "AlgsTask",
-    .priority = (osPriority_t) osPriorityRealtime,
-    .stack_size = 512
-  };
+  /* creation of AlgsTask */
   AlgsTaskHandle = osThreadNew(StartAlgsTask, NULL, &AlgsTask_attributes);
 
-  /* definition and creation of RawSendTask */
-  const osThreadAttr_t RawSendTask_attributes = {
-    .name = "RawSendTask",
-    .priority = (osPriority_t) osPriorityHigh,
-    .stack_size = 512
-  };
+  /* creation of RawSendTask */
   RawSendTaskHandle = osThreadNew(StartRawSendTask, NULL, &RawSendTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -226,6 +233,8 @@ osKernelInitialize();
 /* USER CODE END Header_StartCommandTask */
 void StartCommandTask(void *argument)
 {
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartCommandTask */
   MX_USB_DEVICE_Init();
   osDelay(1000);
