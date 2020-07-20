@@ -53,7 +53,8 @@ void speedParamCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
                 temp = 0;
             }
 
-            jointParam[0][0].speedPesent = temp;
+            jointParam_t* pjp = (&jointParam[0][0]) + index;
+            (*pjp).speedPesent = temp;
         }
         
         *paramLenth = 0;
@@ -78,7 +79,10 @@ void posParamCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
         {
             index = ((uint8_t*)param)[0];
 
-            temp = jointParam[0][0].angleCurrent;
+            
+            jointParam_t* pjp = (&jointParam[0][0]) + index;
+
+            temp = (*pjp).angleCurrent;
             memcpy(((uint8_t*)param)+1, &temp, 4);
         }
 
@@ -95,8 +99,10 @@ void setZeroCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
         if(*paramLenth == 1 && gAlgsMode == AlgsModeIdle)
         {
             index = ((uint8_t*)param)[0];
-            jointParam[0][0].zeroPosition = jointParam[0][0].angleRaw;
-            jointParam[0][0].angleCurrent = 0.0;
+            jointParam_t* pjp = (&jointParam[0][0]) + index;
+
+            (*pjp).zeroPosition = (*pjp).angleRaw;
+            (*pjp).angleCurrent = 0.0;
         }
         
         *paramLenth = 0;
@@ -116,7 +122,8 @@ void setMaxCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
         if(*paramLenth == 1 && gAlgsMode == AlgsModeIdle)
         {
             index = ((uint8_t*)param)[0];
-            jointParam[0][0].angleMax = jointParam[0][0].angleCurrent;
+            jointParam_t* pjp = (&jointParam[0][0]) + index;
+            (*pjp).angleMax = (*pjp).angleCurrent;
         }
         
         *paramLenth = 0;
@@ -136,7 +143,8 @@ void setMinCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
         if(*paramLenth == 1 && gAlgsMode == AlgsModeIdle)
         {
             index = ((uint8_t*)param)[0];
-            jointParam[0][0].angleMin = jointParam[0][0].angleCurrent;
+            jointParam_t* pjp = (&jointParam[0][0]) + index;
+            (*pjp).angleMin = (*pjp).angleCurrent;
         }
         
         *paramLenth = 0;
@@ -189,7 +197,8 @@ void goCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
                 temp = -90;
             }
 
-            jointParam[0][0].angleTarget = temp;
+            jointParam_t* pjp = (&jointParam[0][0]) + index;
+            (*pjp).angleTarget = temp;
             AlgsPtpPredeal();
         }
         

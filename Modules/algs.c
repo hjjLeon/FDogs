@@ -94,9 +94,12 @@ void jointParamInit(void)
 
     for(uint8_t i = 0; i < ROBOT_LEG_NUM; i++)
     {
+        float mirror = 1;
+        if(i%2)
+            mirror = -1;
 
         jointParam[i][0].angleCurrent = 0;
-        jointParam[i][0].direction = 1;
+        jointParam[i][0].direction = mirror*1;
         jointParam[i][0].rate = 1;
         jointParam[i][0].zeroPosition = 90.0;
         jointParam[i][0].speedPesent = 50.0;
@@ -105,7 +108,7 @@ void jointParamInit(void)
 
         
         jointParam[i][1].angleCurrent = 0;
-        jointParam[i][1].direction = 1;
+        jointParam[i][1].direction = mirror*1;
         jointParam[i][1].rate = 1;
         jointParam[i][1].zeroPosition = 90.0;
         jointParam[i][1].speedPesent = 100.0;
@@ -113,7 +116,7 @@ void jointParamInit(void)
         jointParam[i][1].angleMin = -90.0;
 
         jointParam[i][2].angleCurrent = 0;
-        jointParam[i][2].direction = -1;
+        jointParam[i][2].direction = mirror*-1;
         jointParam[i][2].rate = 20.0/16.0;
         jointParam[i][2].zeroPosition = 90.0;
         jointParam[i][2].speedPesent = 100.0;
@@ -331,11 +334,11 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd, uint8_t leg, uint8_t index)
         break;
         case AlgsJogPosPos:
             pL = &legParam[leg];
-            pL->speed = 10.0*(MM_PER_MS_MAX)*(jointParam[0][0].speedPesent/100.0);//mm/10ms
+            pL->speed = 10.0*(MM_PER_MS_MAX)*(pJ->speedPesent/100.0);//mm/10ms
         break;
         case AlgsJogPosNeg:
             pL = &legParam[leg];
-            pL->speed = -10.0*(MM_PER_MS_MAX)*(jointParam[0][0].speedPesent/100.0);//mm/10ms
+            pL->speed = -10.0*(MM_PER_MS_MAX)*(pJ->speedPesent/100.0);//mm/10ms
         break;
         default:
         break;
@@ -356,16 +359,6 @@ void AlgsJogPredeal(AlgsJogCmd_t cmd, uint8_t leg, uint8_t index)
 
 void AlgsJog(void)
 {
-    if((jointParam[0][0].angleCurrent + jointParam[0][0].speed > jointParam[0][0].angleMax && jointParam[0][0].speed > 0) ||
-    (jointParam[0][0].angleCurrent + jointParam[0][0].speed < jointParam[0][0].angleMin && jointParam[0][0].speed < 0))
-    {
-        gAlgsMode = AlgsModeIdle;
-    }
-    else
-    {
-        jointParam[0][0].angleCurrent += jointParam[0][0].speed;
-    }
-
     jointParam_t *pJ = NULL;
     legParam_t   *pL = NULL;
 
