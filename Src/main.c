@@ -30,7 +30,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "w25qxx.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,7 +80,7 @@ int main(void)
   #ifdef ON_QFLSH
   SCB->VTOR = QSPI_BASE;
   #endif
-  
+  uint32_t test1 = 0, test2 = 0;
   /* Enable I-Cache---------------------------------------------------------*/
   SCB_EnableICache();
 
@@ -115,6 +115,11 @@ int main(void)
   MX_TIM5_Init();
   // MX_QUADSPI_Init();
   /* USER CODE BEGIN 2 */
+  W25QXX_Write_Enable();
+  W25QXX_Read((uint8_t*)&test1, 4096, sizeof(test1));
+  test2 = 0xABCDEF12;
+  W25QXX_Write((uint8_t*)&test2, 4096, sizeof(test2));
+  W25QXX_Read((uint8_t*)&test1, 4096, sizeof(test1));
   /* USER CODE END 2 */
 
   /* Init scheduler */
