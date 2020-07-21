@@ -29,7 +29,7 @@
 extern uint16_t W25QXX_TYPE;					//定义W25QXX芯片型号		   
 
 // #define	W25QXX_CS 		PBout(12)  		//W25QXX的片选信号
-#define W25QXX_CS sCS
+#define W25QXX_CS(x) HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, x);
 				 
 ////////////////////////////////////////////////////////////////////////////
  

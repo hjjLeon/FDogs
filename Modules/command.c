@@ -10,6 +10,7 @@ typedef struct
     void (*command)(uint8_t rw, void* param, uint8_t* paramLenth);
 }CommList_t;
 
+static paramStore_t sParamTemp;
 
 
 extern osMessageQueueId_t portRawDataTxHandle;
@@ -55,6 +56,12 @@ void speedParamCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 
             jointParam_t* pjp = (&jointParam[0][0]) + index;
             (*pjp).speedPesent = temp;
+            
+            W25QXX_Read((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
+            jointParam_t* pjp = (&sParamTemp.param[0][0]) + index;
+            (*pjp).speedPesent = temp;
+            W25QXX_Write((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
+            
         }
         
         *paramLenth = 0;
@@ -103,6 +110,13 @@ void setZeroCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
 
             (*pjp).zeroPosition = (*pjp).angleRaw;
             (*pjp).angleCurrent = 0.0;
+
+            
+            
+            W25QXX_Read((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
+            jointParam_t* pjp = (&sParamTemp.param[0][0]) + index;
+            (*pjp).zeroPosition = (*pjp).angleRaw;
+            W25QXX_Write((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
         }
         
         *paramLenth = 0;
@@ -124,6 +138,11 @@ void setMaxCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
             index = ((uint8_t*)param)[0];
             jointParam_t* pjp = (&jointParam[0][0]) + index;
             (*pjp).angleMax = (*pjp).angleCurrent;
+            
+            W25QXX_Read((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
+            jointParam_t* pjp = (&sParamTemp.param[0][0]) + index;
+            (*pjp).angleMax = (*pjp).angleCurrent;
+            W25QXX_Write((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
         }
         
         *paramLenth = 0;
@@ -145,6 +164,11 @@ void setMinCmdFunc(uint8_t rw, void* param, uint8_t* paramLenth)
             index = ((uint8_t*)param)[0];
             jointParam_t* pjp = (&jointParam[0][0]) + index;
             (*pjp).angleMin = (*pjp).angleCurrent;
+            
+            W25QXX_Read((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
+            jointParam_t* pjp = (&sParamTemp.param[0][0]) + index;
+            (*pjp).angleMin = (*pjp).angleCurrent;
+            W25QXX_Write((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
         }
         
         *paramLenth = 0;

@@ -14,13 +14,13 @@ legParam_t   legParam[ROBOT_LEG_NUM] = {0};
 #define LENTH_L2 100
 #define PI 3.1415926
 
-int InverseCal(WCSPosition *pPosition, JointTheta *pTheta)
+int InverseCal(WCSPosition *pPosition, JointTheta *pTheta, uint8_t mir)
 {
     float x, y, z, d, L1, L2;
     float ATp, AT, TC, AC, Theta_ATTp, Theta_TAC;
     float Theta1, Theta2, Theta3;
 
-    d = LENTH_D;
+    d = (mir?-1:1)*LENTH_D;
     L1 = LENTH_L1;
     L2 = LENTH_L2;
 
@@ -30,104 +30,156 @@ int InverseCal(WCSPosition *pPosition, JointTheta *pTheta)
 
 
     ATp = sqrt(pow(z, 2) + pow(y, 2) - pow(d, 2));
-    // printf("ATp = %f\r\n", ATp);
-
-    
-    Theta1 = atan(ATp / d) - atan(fabs(z) / y);
+    Theta1 = atan2(ATp, d) - atan2(z, y);
 
     AT = sqrt(pow(x, 2) + pow(ATp, 2));
-    // printf("AT = %f\r\n", AT);
 
     Theta3 = acos((pow(L1, 2) + pow(L2, 2) - pow(AT, 2)) / (2 * L1 * L2));
 
     TC = L2 * sin(Theta3);
-    // printf("TC = %f\r\n", TC);
     AC = L1 - L2 * cos(Theta3);
-    // printf("AC = %f\r\n", AC);
 
-    Theta_ATTp = atan(ATp / (x));
-    Theta_TAC = atan(TC / AC);
-    
-    // printf("Theta_ATTp = %f\r\n", Theta_ATTp/PI*180.0);
-    // printf("Theta_TAC = %f\r\n", Theta_TAC/PI*180.0);
-
-    if(Theta_TAC < 0.0) 
-        Theta_TAC += PI;
-
-    if(x > 0)
-    {
-        if(z > 0)
-        {
-            Theta_ATTp = 2*PI - Theta_ATTp;
-        }
-        else
-        {
-            Theta_ATTp;
-        }
-    }
-    else
-    {
-        if(z > 0)
-        {
-            Theta_ATTp = fabs(Theta_ATTp) + PI;
-        }
-        else
-        {
-            Theta_ATTp += PI;
-        }
-    }
+    Theta_ATTp = atan2(ATp, x);
+    Theta_TAC = atan2(TC, AC);
 
     Theta2 = Theta_ATTp + Theta_TAC;
+    
+    Theta2 -= PI;
 
     pTheta->theta1 = fmod(Theta1/PI*180.0, 360.0);
     pTheta->theta2 = fmod(Theta2/PI*180.0, 360.0);
     pTheta->theta3 = fmod(Theta3/PI*180.0, 360.0);
 
-    pTheta->theta2 -= 180.0;
+    // pTheta->theta2 -= 180.0;
     pTheta->theta3 -= 90.0 ;
+}
+
+void bodyIK(WCSPosition bodyPos, WCSPosition output[4])
+{
+    float L = 130, W = 80;
+    float pb, rb, yb;
+
+    pb = bodyPos.x;
+    rb = bodyPos.y;
+    yb = bodyPos.z;
+
+#if 1
+    //优化重复计算
+    float temp1, temp2;
+    temp1 = (L*cos(rb)*cos(yb))/2;
+    temp2 = (W*cos(rb)*sin(yb))/2;
+
+    output[0].x =   temp1 - temp2;
+    output[1].x =   temp1 + temp2;
+    output[2].x = - temp1 - temp2;
+    output[3].x = - temp1 + temp2;
+
+    temp1 = (L*(cos(pb)*sin(yb) + cos(yb)*sin(pb)*sin(rb)))/2;
+    temp2 = (W*(cos(pb)*cos(yb) - sin(pb)*sin(rb)*sin(yb)))/2;
+
+    output[0].y =   temp1 + temp2;
+    output[1].y =   temp1 - temp2;
+    output[2].y = - temp1 + temp2;
+    output[3].y = - temp1 - temp2;
+
+    temp1 = (L*(sin(pb)*sin(yb) - cos(pb)*cos(yb)*sin(rb)))/2;
+    temp2 = (W*(cos(yb)*sin(pb) + cos(pb)*sin(rb)*sin(yb)))/2;
+
+    output[0].z =   temp1 + temp2;
+    output[1].z =   temp1 - temp2;
+    output[2].z = - temp1 + temp2;
+    output[3].z = - temp1 - temp2;
+#else
+    output[0][0] = (L*cos(rb)*cos(yb))/2 - (W*cos(rb)*sin(yb))/2;
+    output[0][1] = (L*(cos(pb)*sin(yb) + cos(yb)*sin(pb)*sin(rb)))/2 + (W*(cos(pb)*cos(yb) - sin(pb)*sin(rb)*sin(yb)))/2;
+    output[0][2] = (L*(sin(pb)*sin(yb) - cos(pb)*cos(yb)*sin(rb)))/2 + (W*(cos(yb)*sin(pb) + cos(pb)*sin(rb)*sin(yb)))/2;
+    
+    output[1][0] = (L*cos(rb)*cos(yb))/2 + (W*cos(rb)*sin(yb))/2;
+    output[1][1] = (L*(cos(pb)*sin(yb) + cos(yb)*sin(pb)*sin(rb)))/2 - (W*(cos(pb)*cos(yb) - sin(pb)*sin(rb)*sin(yb)))/2;
+    output[1][2] = (L*(sin(pb)*sin(yb) - cos(pb)*cos(yb)*sin(rb)))/2 - (W*(cos(yb)*sin(pb) + cos(pb)*sin(rb)*sin(yb)))/2;
+    
+    output[2][0] = - (L*cos(rb)*cos(yb))/2 - (W*cos(rb)*sin(yb))/2;
+    output[2][1] = (W*(cos(pb)*cos(yb) - sin(pb)*sin(rb)*sin(yb)))/2 - (L*(cos(pb)*sin(yb) + cos(yb)*sin(pb)*sin(rb)))/2;
+    output[2][2] = (W*(cos(yb)*sin(pb) + cos(pb)*sin(rb)*sin(yb)))/2 - (L*(sin(pb)*sin(yb) - cos(pb)*cos(yb)*sin(rb)))/2;
+    
+    output[3][0] = (W*cos(rb)*sin(yb))/2 - (L*cos(rb)*cos(yb))/2;
+    output[3][1] = - (L*(cos(pb)*sin(yb) + cos(yb)*sin(pb)*sin(rb)))/2 - (W*(cos(pb)*cos(yb) - sin(pb)*sin(rb)*sin(yb)))/2;
+    output[3][2] = - (L*(sin(pb)*sin(yb) - cos(pb)*cos(yb)*sin(rb)))/2 - (W*(cos(yb)*sin(pb) + cos(pb)*sin(rb)*sin(yb)))/2;
+#endif
+}
+
+void bodyMoveTest(WCSPosition bodyAttitude, WCSPosition bodyPos, WCSPosition legPos[4])
+{
+    WCSPosition temp[4];
+    JointTheta theta;
+    bodyIK(bodyPos, temp);
+
+    for(uint8_t i = 0; i < 4; i++)
+    {
+        temp[i].x = legPos[i].x - temp[i].x - bodyPos.x;
+        temp[i].y = legPos[i].y - temp[i].y - bodyPos.y;
+        temp[i].z = legPos[i].z - temp[i].z - bodyPos.z;
+        InverseCal(&temp[i], &theta, i%2);
+        jointParam[i][0].angleCurrent = theta.theta1;
+        jointParam[i][1].angleCurrent = theta.theta2;
+        jointParam[i][2].angleCurrent = theta.theta3;
+    }
+
 }
 
 void jointAngleUpdate(void);
 
+static paramStore_t sParamTemp;
 void jointParamInit(void)
 {
-
-    for(uint8_t i = 0; i < ROBOT_LEG_NUM; i++)
+    W25QXX_Read((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
+    if(sParamTemp.StoreFlag == 0xBA)
     {
-        float mirror = 1;
-        if(i%2)
-            mirror = -1;
-
-        jointParam[i][0].angleCurrent = 0;
-        jointParam[i][0].direction = mirror*1;
-        jointParam[i][0].rate = 1;
-        jointParam[i][0].zeroPosition = 90.0;
-        jointParam[i][0].speedPesent = 50.0;
-        jointParam[i][0].angleMax = 30.0;
-        jointParam[i][0].angleMin = -30.0;
-
-        
-        jointParam[i][1].angleCurrent = 0;
-        jointParam[i][1].direction = mirror*1;
-        jointParam[i][1].rate = 1;
-        jointParam[i][1].zeroPosition = 90.0;
-        jointParam[i][1].speedPesent = 100.0;
-        jointParam[i][1].angleMax = 90.0;
-        jointParam[i][1].angleMin = -90.0;
-
-        jointParam[i][2].angleCurrent = 0;
-        jointParam[i][2].direction = mirror*-1;
-        jointParam[i][2].rate = 20.0/16.0;
-        jointParam[i][2].zeroPosition = 90.0;
-        jointParam[i][2].speedPesent = 100.0;
-        jointParam[i][2].angleMax = 55.0;
-        jointParam[i][2].angleMin = -30.0;
-
-        legParam[i].positionOwn.x = -80;
-        legParam[i].positionOwn.y = 20;
-        legParam[i].positionOwn.z = -100;
-        legParam[i].speed = 50.0;
+        memcpy(jointParam, sParamTemp.param, sizeof(jointParam));
     }
+    else
+    {
+        for(uint8_t i = 0; i < ROBOT_LEG_NUM; i++)
+        {
+            float mirror = 1;
+            if(i%2)
+                mirror = -1;
+
+            jointParam[i][0].angleCurrent = 0;
+            jointParam[i][0].direction = mirror*1;
+            jointParam[i][0].rate = 1;
+            jointParam[i][0].zeroPosition = 90.0;
+            jointParam[i][0].speedPesent = 50.0;
+            jointParam[i][0].angleMax = 30.0;
+            jointParam[i][0].angleMin = -30.0;
+
+            
+            jointParam[i][1].angleCurrent = 0;
+            jointParam[i][1].direction = mirror*1;
+            jointParam[i][1].rate = 1;
+            jointParam[i][1].zeroPosition = 90.0;
+            jointParam[i][1].speedPesent = 100.0;
+            jointParam[i][1].angleMax = 90.0;
+            jointParam[i][1].angleMin = -90.0;
+
+            jointParam[i][2].angleCurrent = 0;
+            jointParam[i][2].direction = mirror*-1;
+            jointParam[i][2].rate = 20.0/16.0;
+            jointParam[i][2].zeroPosition = 90.0;
+            jointParam[i][2].speedPesent = 100.0;
+            jointParam[i][2].angleMax = 55.0;
+            jointParam[i][2].angleMin = -30.0;
+
+            legParam[i].positionOwn.x = -80;
+            legParam[i].positionOwn.y = 20;
+            legParam[i].positionOwn.z = -100;
+            legParam[i].speed = 50.0;
+        }
+        memcpy(sParamTemp.param, jointParam, sizeof(jointParam));
+        sParamTemp.StoreFlag = 0xBA;
+        W25QXX_Write((uint8_t*)&sParamTemp, 8*4096, sizeof(sParamTemp));
+    }
+    
 
     jointParam[0][0].PwmRegist = (uint32_t*)&(htim2.Instance->CCR1);
     jointParam[0][1].PwmRegist = (uint32_t*)&(htim2.Instance->CCR2);

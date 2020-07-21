@@ -44,6 +44,13 @@ typedef struct
 
 typedef struct
 {
+    jointParam_t param[ROBOT_LEG_NUM][ROBOT_LEG_JOINT_NUM];
+    uint8_t StoreFlag;
+}paramStore_t;
+
+
+typedef struct
+{
     WCSPosition positionOwn;
     WCSPosition positionPub;
     float speed;

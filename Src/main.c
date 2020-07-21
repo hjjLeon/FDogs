@@ -115,6 +115,7 @@ int main(void)
   MX_TIM5_Init();
   // MX_QUADSPI_Init();
   /* USER CODE BEGIN 2 */
+  W25QXX_Init();
   W25QXX_Write_Enable();
   W25QXX_Read((uint8_t*)&test1, 4096, sizeof(test1));
   test2 = 0xABCDEF12;
