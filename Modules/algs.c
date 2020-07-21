@@ -427,7 +427,7 @@ void AlgsJog(void)
         case AlgsJogPosNeg:
             JointTheta  joint;
             *(&(pL->positionOwn.x) + sJogIndex) += pL->speed;
-            InverseCal(&pL->positionOwn, &joint);
+            InverseCal(&pL->positionOwn, &joint, sJogLeg%2);
             jointParam[sJogLeg][0].angleCurrent = joint.theta1;
             jointParam[sJogLeg][1].angleCurrent = joint.theta2;
             jointParam[sJogLeg][2].angleCurrent = joint.theta3;
